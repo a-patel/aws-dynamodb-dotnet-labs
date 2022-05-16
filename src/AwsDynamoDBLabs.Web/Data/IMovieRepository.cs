@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 #endregion
 
-namespace AwsDynamoDBLabs.Web.Services
+namespace AwsDynamoDBLabs.Web.Data
 {
-    public interface IMovieService
+    public interface IMovieRepository
     {
         Task<IEnumerable<Movie>> GetAll();
 

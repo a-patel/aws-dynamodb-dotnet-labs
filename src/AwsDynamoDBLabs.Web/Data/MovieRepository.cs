@@ -5,25 +5,23 @@ using Amazon.DynamoDBv2.DocumentModel;
 using AwsDynamoDBLabs.Web.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AwsDynamoDBLabs.Web.Data;
-
 #endregion
 
-namespace AwsDynamoDBLabs.Web.Services
+namespace AwsDynamoDBLabs.Web.Data
 {
-    public class MovieService : IMovieService
+    public class MovieRepository : IMovieRepository
     {
         #region Members
 
-        private readonly IMovieRepository _movieRepository;
+        private readonly DynamoDBContext _context;
 
         #endregion
 
         #region Ctor
 
-        public MovieService(IMovieRepository movieRepository)
+        public MovieRepository(IAmazonDynamoDB dynamoDbClient)
         {
-            _movieRepository = movieRepository;
+            _context = new DynamoDBContext(dynamoDbClient);
         }
 
         #endregion
@@ -32,37 +30,37 @@ namespace AwsDynamoDBLabs.Web.Services
 
         public async Task<IEnumerable<Movie>> GetAll()
         {
-            return await _movieRepository.GetAll();
+            return await _context.ScanAsync<Movie>(new List<ScanCondition>()).GetRemainingAsync();
         }
 
         public async Task<Movie> Get(int id, string name)
         {
-            return await _movieRepository.Get(id, name);
+            return await _context.LoadAsync<Movie>(id, name);
         }
 
         public async Task Add(Movie movie)
         {
-            await _movieRepository.Add(movie);
+            await _context.SaveAsync(movie);
         }
 
         public async Task Update(Movie movie)
         {
-            await _movieRepository.Update(movie);
+            await _context.SaveAsync(movie);
         }
 
         public async Task Delete(Movie movie)
         {
-            await _movieRepository.Delete(movie);
+            await _context.SaveAsync(movie);
         }
 
         public async Task<IEnumerable<Movie>> GetMovieRank(string movieName)
         {
             var config = new DynamoDBOperationConfig
             {
-                IndexName = "MovieName-index"
+                IndexName = "IX-MovieName"
             };
 
-            return await _movieRepository.QueryAsync<Movie>(movieName, config).GetRemainingAsync();
+            return await _context.QueryAsync<Movie>(movieName, config).GetRemainingAsync();
         }
 
         public async Task<IEnumerable<Movie>> GetUsersRankedMoviesByMovieTitle(int userId, string movieName)
@@ -71,11 +69,11 @@ namespace AwsDynamoDBLabs.Web.Services
             {
                 QueryFilter = new List<ScanCondition>
                 {
-                    new ScanCondition("MovieName", ScanOperator.BeginsWith, movieName)
+                    new ScanCondition("Name", ScanOperator.BeginsWith, movieName)
                 }
             };
 
-            return await _movieRepository.QueryAsync<Movie>(userId, config).GetRemainingAsync();
+            return await _context.QueryAsync<Movie>(userId, config).GetRemainingAsync();
         }
 
         #endregion
